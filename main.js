@@ -110,8 +110,10 @@ function processAllWorkbooks(fileData, files) {
     const keys          = Object.keys(rows.find(r => Object.keys(r).length > 0) || rows[0] || {});
     const remarkKey     = keys.find(k => k.trim().toLowerCase() === 'remark');
     const remarkTypeKey = keys.find(k => k.trim().toLowerCase() === 'remark type');
-    const callStatusKey = keys.find(k => k.trim().toLowerCase() === 'call status');
-    const accountNoKey  = keys.find(k => k.trim().toLowerCase() === 'account no.' || k.trim().toLowerCase() === 'account no');
+    const callDurationKey = keys.find(k => k.trim().toLowerCase() === 'call duration');
+    const accountNoKey    = keys.find(k =>
+      k.trim().toLowerCase() === 'account no.' || k.trim().toLowerCase() === 'account no'
+    );
 
     if (!remarkKey)     { hideProcessing(); showError('Column "Remark" not found. Check your file headers.'); return; }
     if (!remarkTypeKey) { hideProcessing(); showError('Column "Remark Type" not found. Check your file headers.'); return; }
@@ -141,10 +143,12 @@ function processAllWorkbooks(fileData, files) {
       if (b_remark)           fileBroadcast++;
       if (m_type)             fileManual++;
 
-      /* Connected: unique per file, also track cross-file global unique */
-      if (callStatusKey) {
-        const statusRaw = String(row[callStatusKey] ?? '').trim().toUpperCase();
-        if (statusRaw === 'CONNECTED') {
+      /* ── Connected: valid Call Duration (not blank / not 00:00:00), unique Account No. ── */
+      if (callDurationKey) {
+        const durRaw = String(row[callDurationKey] ?? '').trim();
+        const hasValidDuration = durRaw !== '' && durRaw !== '00:00:00';
+
+        if (hasValidDuration) {
           const acctRaw = accountNoKey ? String(row[accountNoKey] ?? '').trim() : '';
           const acctKey = acctRaw.toLowerCase();
 
