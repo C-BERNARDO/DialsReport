@@ -2,14 +2,18 @@
 const dropZone        = document.getElementById('dropZone');
 const fileInput       = document.getElementById('fileInput');
 const fileName        = document.getElementById('fileName');
-const processingBar   = document.getElementById('processingBar');
-const processingMsg   = document.getElementById('processingMsg');
+const processStatus    = document.getElementById('processStatus');
+const processCurrent   = document.getElementById('processCurrent');
+const processProgress  = document.getElementById('processProgress');
+const processDoneList  = document.getElementById('processDoneList');
 const resultsSection  = document.getElementById('resultsSection');
+const emptyState      = document.getElementById('emptyState');
 const errorBanner     = document.getElementById('errorBanner');
 const errorMessage    = document.getElementById('errorMessage');
-const fileInfo        = document.getElementById('fileInfo');
+const fileInfoSummary = document.getElementById('fileInfoSummary');
+const fileInfoDetail  = document.getElementById('fileInfoDetail');
+const fileInfoToggle  = document.getElementById('fileInfoToggle');
 const breakdownBody   = document.getElementById('breakdownBody');
-const paginationInfo  = document.getElementById('paginationInfo');
 const resetBtn        = document.getElementById('resetBtn');
 
 /* Counter display elements */
@@ -17,6 +21,12 @@ const elCntPCombined       = document.getElementById('cntPCombined');
 const elCntBRemarkContains = document.getElementById('cntBRemarkContains');
 const elCntMTypeEquals     = document.getElementById('cntMTypeEquals');
 const elCntCUnique         = document.getElementById('cntCUnique');
+const elCntConnectedWithClient = document.getElementById('cntConnectedWithClient');
+const elCntUniqueWorked    = document.getElementById('cntUniqueWorked');
+const elCntDropSystem      = document.getElementById('cntDropSystem');
+const elCntDropClient      = document.getElementById('cntDropClient');
+const elCntPU               = document.getElementById('cntPU');
+const elCntPM               = document.getElementById('cntPM');
 
 /* ===== DRAG & DROP ===== */
 dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
@@ -25,9 +35,9 @@ dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-ove
 dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
   dropZone.classList.remove('drag-over');
-  const files = Array.from(e.dataTransfer.files).filter(f => f.name.match(/\.(xlsx|xls)$/i));
+  const files = Array.from(e.dataTransfer.files).filter(f => f.name.match(/\.(xlsx|xls|csv)$/i));
   if (files.length) handleFiles(files);
-  else showError('Please drop valid Excel files (.xlsx or .xls).');
+  else showError('Please drop valid Excel (.xlsx, .xls) or CSV (.csv) files.');
 });
 
 dropZone.addEventListener('click', (e) => { if (e.target.tagName !== 'LABEL') fileInput.click(); });
@@ -38,33 +48,37 @@ fileInput.addEventListener('change', () => {
 
 resetBtn.addEventListener('click', resetAll);
 
+fileInfoToggle.addEventListener('click', () => {
+  const isHidden = fileInfoDetail.classList.contains('hidden');
+  fileInfoDetail.classList.toggle('hidden', !isHidden);
+  fileInfoToggle.textContent = isHidden ? 'Hide files' : 'Show files';
+});
+
 /* ===== FILE HANDLER ===== */
 function handleFiles(files) {
   hideError();
   resultsSection.classList.add('hidden');
 
-  const invalid = files.filter(f => !f.name.match(/\.(xlsx|xls)$/i));
+  const invalid = files.filter(f => !f.name.match(/\.(xlsx|xls|csv)$/i));
   if (invalid.length) {
-    showError(`Some files are not valid Excel files: ${invalid.map(f => f.name).join(', ')}`);
+    showError(`Some files are not valid Excel or CSV files: ${invalid.map(f => f.name).join(', ')}`);
     return;
   }
 
   fileName.textContent = files.length === 1
     ? files[0].name
-    : `${files.length} files selected: ${files.map(f => f.name).join(', ')}`;
+    : `${files.length} files selected`;
 
-  showProcessing(`Reading ${files.length} file${files.length > 1 ? 's' : ''}…`);
+  initProcessingStatus(files.length);
 
   Promise.all(files.map(f => readFileAsArrayBuffer(f)))
-    .then(buffers => {
-      setTimeout(() => {
-        try { processAllWorkbooks(buffers, files); }
-        catch (err) {
-          hideProcessing();
-          showError('Could not read one or more files. Make sure they are valid Excel workbooks.');
-          console.error(err);
-        }
-      }, 50);
+    .then(async buffers => {
+      try { await processAllWorkbooks(buffers, files); }
+      catch (err) {
+        hideProcessing();
+        showError('Could not read one or more files. Make sure they are valid Excel or CSV files.');
+        console.error(err);
+      }
     })
     .catch(err => { hideProcessing(); showError('Failed to read the file(s).'); console.error(err); });
 }
@@ -79,9 +93,7 @@ function readFileAsArrayBuffer(file) {
 }
 
 /* ===== PROCESS ALL WORKBOOKS ===== */
-function processAllWorkbooks(fileData, files) {
-  setProcessingMsg('Parsing workbooks…');
-
+async function processAllWorkbooks(fileData, files) {
   // Per-file stats
   const fileStats = []; // { name, predictive, broadcast, manual, connected }
   let totalFilesInfo = [];
@@ -89,23 +101,50 @@ function processAllWorkbooks(fileData, files) {
   // Cross-file dedup for connected accounts
   const seenAccountNos = new Map();
 
+  // Cross-file dedup for "Connected with Client" accounts
+  const seenConnectedClientAccounts = new Map();
+
+  // Cross-file dedup for "Unique Worked Accounts" (Status not NEW / ABORT)
+  const seenWorkedAccounts = new Map();
+
   // Grand totals
   let totalPredictive = 0;
   let totalBroadcast  = 0;
   let totalManual     = 0;
   let totalConnected  = 0;
+  let totalDropSystem = 0;
+  let totalDropClient = 0;
+  let totalPU = 0;
+  let totalPM = 0;
   let totalRows       = 0;
 
-  for (const { buffer, file } of fileData) {
-    const workbook  = XLSX.read(buffer, { type: 'array', cellDates: false });
-    const sheetName = workbook.SheetNames[0];
-    const sheet     = workbook.Sheets[sheetName];
-    const rows      = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
+  const totalFiles = fileData.length;
+
+  for (let i = 0; i < fileData.length; i++) {
+    const { buffer, file } = fileData[i];
+
+    setCurrentProcessingFile(file.name, i, totalFiles);
+    await yieldToUI(); // let the browser paint "Processing: <file.name>" before we block on parsing
+
+    let workbook, sheetName, rows;
+
+    if (file.name.match(/\.csv$/i)) {
+      /* ── CSV path: read as text, parse with SheetJS ── */
+      const text = new TextDecoder('utf-8').decode(buffer);
+      workbook  = XLSX.read(text, { type: 'string', cellDates: false });
+      sheetName = workbook.SheetNames[0];
+      rows      = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '', raw: false });
+    } else {
+      /* ── Excel path (unchanged) ── */
+      workbook  = XLSX.read(buffer, { type: 'array', cellDates: false });
+      sheetName = workbook.SheetNames[0];
+      rows      = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '', raw: false });
+    }
 
     totalRows += rows.length;
     totalFilesInfo.push(`${file.name} (${rows.length.toLocaleString()} rows, sheet "${sheetName}")`);
 
-    setProcessingMsg('Detecting columns…');
+
 
     const keys          = Object.keys(rows.find(r => Object.keys(r).length > 0) || rows[0] || {});
     const remarkKey     = keys.find(k => k.trim().toLowerCase() === 'remark');
@@ -114,6 +153,9 @@ function processAllWorkbooks(fileData, files) {
     const accountNoKey    = keys.find(k =>
       k.trim().toLowerCase() === 'account no.' || k.trim().toLowerCase() === 'account no'
     );
+    const callStatusKey   = keys.find(k => k.trim().toLowerCase() === 'call status');
+    const statusKey       = keys.find(k => k.trim().toLowerCase() === 'status');
+    const remarkByKey     = keys.find(k => k.trim().toLowerCase() === 'remark by');
 
     if (!remarkKey)     { hideProcessing(); showError('Column "Remark" not found. Check your file headers.'); return; }
     if (!remarkTypeKey) { hideProcessing(); showError('Column "Remark Type" not found. Check your file headers.'); return; }
@@ -122,11 +164,22 @@ function processAllWorkbooks(fileData, files) {
     let fileBroadcast  = 0;
     let fileManual     = 0;
     let fileConnected  = 0;
+    let fileConnectedWithClient = 0;
+    let fileUniqueWorked        = 0;
+    let fileDropSystem = 0;
+    let fileDropClient = 0;
+    let filePU = 0;
+    let filePM = 0;
 
     // Per-file seen accounts (for per-file unique connected)
     const fileSeenAccounts = new Map();
 
-    setProcessingMsg(`Scanning ${rows.length.toLocaleString()} rows in ${file.name}…`);
+    // Per-file seen accounts (for per-file unique "Connected with Client")
+    const fileSeenConnectedClientAccounts = new Map();
+
+    // Per-file seen accounts (for per-file unique "Worked Accounts")
+    const fileSeenWorkedAccounts = new Map();
+
 
     rows.forEach(row => {
       const remarkRaw = String(row[remarkKey]     ?? '');
@@ -142,6 +195,28 @@ function processAllWorkbooks(fileData, files) {
       if (p_remark || p_type) filePredictive++;
       if (b_remark)           fileBroadcast++;
       if (m_type)             fileManual++;
+
+      /* ── Dropped Calls: Call Status is "DROPPED", split by Remark By ── */
+      if (callStatusKey) {
+        const callStatusLow = String(row[callStatusKey] ?? '').trim().toLowerCase();
+        const isDropped = callStatusLow === 'dropped';
+
+        if (isDropped) {
+          const remarkByLow = remarkByKey ? String(row[remarkByKey] ?? '').trim().toLowerCase() : '';
+          const isSystem = remarkByLow === 'system';
+
+          if (isSystem) fileDropSystem++;
+          else          fileDropClient++;
+        }
+      }
+
+      /* ── PU / PM: raw counts based on Status column, no dedup ── */
+      if (statusKey) {
+        const statusLow = String(row[statusKey] ?? '').trim().toLowerCase();
+
+        if (statusLow === 'pu') filePU++;
+        if (statusLow === 'pm') filePM++;
+      }
 
       /* ── Connected: valid Call Duration (not blank / not 00:00:00), unique Account No. ── */
       if (callDurationKey) {
@@ -162,24 +237,83 @@ function processAllWorkbooks(fileData, files) {
           }
         }
       }
+
+      /* ── Connected with Client: unique Account No. where Call Status is "CONNECTED" ── */
+      if (callStatusKey) {
+        const statusRaw = String(row[callStatusKey] ?? '').trim().toLowerCase();
+        const isConnected = statusRaw === 'connected';
+
+        if (isConnected) {
+          const acctRaw = accountNoKey ? String(row[accountNoKey] ?? '').trim() : '';
+          const acctKey = acctRaw.toLowerCase();
+
+          if (!fileSeenConnectedClientAccounts.has(acctKey)) {
+            fileSeenConnectedClientAccounts.set(acctKey, true);
+            fileConnectedWithClient++;
+          }
+          // Also track global cross-file unique
+          if (!seenConnectedClientAccounts.has(acctKey)) {
+            seenConnectedClientAccounts.set(acctKey, true);
+          }
+        }
+      }
+
+      /* ── Unique Worked Accounts: exclude Status "NEW" or "ABORT", dedupe by Account No. ── */
+      if (statusKey) {
+        const statusValRaw = String(row[statusKey] ?? '').trim().toLowerCase();
+        const isExcluded = statusValRaw === 'new' || statusValRaw === 'abort';
+
+        if (!isExcluded) {
+          const acctRaw = accountNoKey ? String(row[accountNoKey] ?? '').trim() : '';
+          const acctKey = acctRaw.toLowerCase();
+
+          if (!fileSeenWorkedAccounts.has(acctKey)) {
+            fileSeenWorkedAccounts.set(acctKey, true);
+            fileUniqueWorked++;
+          }
+          // Also track global cross-file unique
+          if (!seenWorkedAccounts.has(acctKey)) {
+            seenWorkedAccounts.set(acctKey, true);
+          }
+        }
+      }
     });
 
     totalPredictive += filePredictive;
     totalBroadcast  += fileBroadcast;
     totalManual     += fileManual;
     totalConnected  += fileConnected;
+    totalDropSystem += fileDropSystem;
+    totalDropClient += fileDropClient;
+    totalPU         += filePU;
+    totalPM         += filePM;
 
     fileStats.push({
-      name:       file.name,
-      predictive: filePredictive,
-      broadcast:  fileBroadcast,
-      manual:     fileManual,
-      connected:  fileConnected,
+      name:               file.name,
+      predictive:         filePredictive,
+      broadcast:          fileBroadcast,
+      manual:             fileManual,
+      connected:          fileConnected,
+      connectedWithClient: fileConnectedWithClient,
+      uniqueWorked:        fileUniqueWorked,
+      dropSystem:          fileDropSystem,
+      dropClient:          fileDropClient,
+      pu:                  filePU,
+      pm:                  filePM,
     });
+
+    markFileDone(file.name, rows.length, i, totalFiles);
+    await yieldToUI(); // let the browser paint the completed-file update
   }
 
   // Global unique connected = cross-file deduplicated count
   const globalUniqueConnected = seenAccountNos.size;
+
+  // Global unique "Connected with Client" = cross-file deduplicated count
+  const globalUniqueConnectedWithClient = seenConnectedClientAccounts.size;
+
+  // Global unique "Worked Accounts" = cross-file deduplicated count
+  const globalUniqueWorked = seenWorkedAccounts.size;
 
   if (!totalRows) {
     hideProcessing();
@@ -192,28 +326,42 @@ function processAllWorkbooks(fileData, files) {
   animateCount(elCntBRemarkContains, totalBroadcast);
   animateCount(elCntMTypeEquals,     totalManual);
   animateCount(elCntCUnique,         globalUniqueConnected);
+  animateCount(elCntConnectedWithClient, globalUniqueConnectedWithClient);
+  animateCount(elCntUniqueWorked,    globalUniqueWorked);
+  animateCount(elCntDropSystem,      totalDropSystem);
+  animateCount(elCntDropClient,      totalDropClient);
+  animateCount(elCntPU,              totalPU);
+  animateCount(elCntPM,              totalPM);
 
-  /* File meta */
+  /* File meta — summary line always visible; detailed list auto-hidden
+     to reduce clutter, with a toggle to reveal it on demand. */
   if (files.length === 1) {
     const f = files[0];
-    fileInfo.textContent =
+    fileInfoSummary.textContent =
       `${f.name}  ·  ${totalRows.toLocaleString()} rows scanned  ·  ${(f.size / 1024).toFixed(1)} KB`;
+    fileInfoToggle.classList.add('hidden');
+    fileInfoDetail.classList.add('hidden');
+    fileInfoDetail.textContent = '';
   } else {
-    fileInfo.textContent =
-      `${files.length} files merged  ·  ${totalRows.toLocaleString()} total rows  ·  ` +
-      totalFilesInfo.join('  |  ');
+    fileInfoSummary.textContent =
+      `${files.length} files merged  ·  ${totalRows.toLocaleString()} total rows`;
+    fileInfoDetail.innerHTML = totalFilesInfo.map(escapeHtml).join('<br>');
+    fileInfoToggle.textContent = 'Show files';
+    fileInfoToggle.classList.remove('hidden');
+    fileInfoDetail.classList.add('hidden'); // auto-collapsed once processing succeeds
   }
 
   /* Build per-file summary table */
-  buildSummaryTable(fileStats, globalUniqueConnected, files.length);
+  buildSummaryTable(fileStats);
 
   hideProcessing();
+  emptyState.classList.add('hidden');
   resultsSection.classList.remove('hidden');
   resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* ===== PER-FILE SUMMARY TABLE ===== */
-function buildSummaryTable(fileStats, globalUniqueConnected, fileCount) {
+function buildSummaryTable(fileStats) {
   const frag = document.createDocumentFragment();
   breakdownBody.innerHTML = '';
 
@@ -225,37 +373,17 @@ function buildSummaryTable(fileStats, globalUniqueConnected, fileCount) {
       <td class="col-broadcast num-cell">${stat.broadcast.toLocaleString()}</td>
       <td class="col-manual num-cell">${stat.manual.toLocaleString()}</td>
       <td class="col-connected num-cell">${stat.connected.toLocaleString()}</td>
+      <td class="col-cwc num-cell">${stat.connectedWithClient.toLocaleString()}</td>
+      <td class="col-worked num-cell">${stat.uniqueWorked.toLocaleString()}</td>
+      <td class="col-drop-system num-cell">${stat.dropSystem.toLocaleString()}</td>
+      <td class="col-drop-client num-cell">${stat.dropClient.toLocaleString()}</td>
+      <td class="col-pu num-cell">${stat.pu.toLocaleString()}</td>
+      <td class="col-pm num-cell">${stat.pm.toLocaleString()}</td>
     `;
     frag.appendChild(tr);
   });
 
-  /* Totals row (only when multiple files) */
-  if (fileCount > 1) {
-    const totals = fileStats.reduce((acc, s) => {
-      acc.predictive += s.predictive;
-      acc.broadcast  += s.broadcast;
-      acc.manual     += s.manual;
-      acc.connected  += s.connected;
-      return acc;
-    }, { predictive: 0, broadcast: 0, manual: 0, connected: 0 });
-
-    const tr = document.createElement('tr');
-    tr.classList.add('totals-row');
-    tr.innerHTML = `
-      <td class="totals-label">Total (${fileCount} files)</td>
-      <td class="col-predictive num-cell">${totals.predictive.toLocaleString()}</td>
-      <td class="col-broadcast num-cell">${totals.broadcast.toLocaleString()}</td>
-      <td class="col-manual num-cell">${totals.manual.toLocaleString()}</td>
-      <td class="col-connected num-cell">${globalUniqueConnected.toLocaleString()} <span class="unique-note">unique</span></td>
-    `;
-    frag.appendChild(tr);
-  }
-
   breakdownBody.appendChild(frag);
-
-  paginationInfo.textContent = fileCount === 1
-    ? '1 file'
-    : `${fileCount} files`;
 }
 
 /* ===== ANIMATE COUNTER ===== */
@@ -273,10 +401,39 @@ function animateCount(el, target) {
   }, interval);
 }
 
-/* ===== PROCESSING ===== */
-function showProcessing(msg)   { processingMsg.textContent = msg; processingBar.classList.remove('hidden'); }
-function setProcessingMsg(msg) { processingMsg.textContent = msg; }
-function hideProcessing()      { processingBar.classList.add('hidden'); }
+/* ===== PROCESSING STATUS ===== */
+function initProcessingStatus(totalFiles) {
+  processDoneList.innerHTML = '';
+  processCurrent.textContent = 'Preparing…';
+  processProgress.textContent = `0 of ${totalFiles} file${totalFiles > 1 ? 's' : ''} processed`;
+  processStatus.classList.remove('hidden');
+}
+
+function setCurrentProcessingFile(name, index, totalFiles) {
+  processCurrent.textContent = `Processing: ${name}`;
+  processProgress.textContent = `${index} of ${totalFiles} file${totalFiles > 1 ? 's' : ''} processed`;
+}
+
+function markFileDone(name, rowCount, index, totalFiles) {
+  const li = document.createElement('li');
+  li.innerHTML = `
+    <svg class="done-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <span class="done-name" title="${escapeHtml(name)}">${escapeHtml(name)} — ${rowCount.toLocaleString()} rows</span>
+  `;
+  processDoneList.appendChild(li);
+  processDoneList.scrollTop = processDoneList.scrollHeight;
+
+  const doneCount = index + 1;
+  processProgress.textContent = `${doneCount} of ${totalFiles} file${totalFiles > 1 ? 's' : ''} processed`;
+}
+
+/* Yields control back to the browser so it can paint the status panel
+   update before the (synchronous) parsing of the next file begins. */
+function yieldToUI() {
+  return new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+}
+
+function hideProcessing() { processStatus.classList.add('hidden'); }
 
 /* ===== ERROR ===== */
 function showError(msg) { errorMessage.textContent = msg; errorBanner.classList.remove('hidden'); }
@@ -287,12 +444,15 @@ function resetAll() {
   fileInput.value            = '';
   fileName.textContent       = 'No files selected';
   resultsSection.classList.add('hidden');
+  emptyState.classList.remove('hidden');
   hideError(); hideProcessing();
   breakdownBody.innerHTML    = '';
-  fileInfo.textContent       = '';
-  paginationInfo.textContent = '';
+  fileInfoSummary.textContent = '';
+  fileInfoDetail.textContent  = '';
+  fileInfoDetail.classList.add('hidden');
+  fileInfoToggle.classList.add('hidden');
 
-  [elCntPCombined, elCntBRemarkContains, elCntMTypeEquals, elCntCUnique]
+  [elCntPCombined, elCntBRemarkContains, elCntMTypeEquals, elCntCUnique, elCntConnectedWithClient, elCntUniqueWorked, elCntDropSystem, elCntDropClient, elCntPU, elCntPM]
     .forEach(el => { if (el) el.textContent = '—'; });
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
