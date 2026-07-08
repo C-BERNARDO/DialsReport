@@ -3,36 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Remark Analyzer</title>
+  <title>Dial Report</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="alternate icon" href="favicon.svg" />
   <link rel="stylesheet" href="main.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
-  <!-- ═══ TOP BAR ═══ -->
-  <header class="top-bar">
-    <div class="top-bar-brand">
-      <div class="logo-mark">RA</div>
-      <div class="brand-text">
-        <h1 class="app-title">Remark Analyzer</h1>
-        <p class="app-subtitle">Predictive · Broadcast · Manual · Connected · Worked · Dropped · PU/PM</p>
+  <div class="app-shell">
+
+    <!-- ───────── LEFT: dark sidebar (upload) ───────── -->
+    <aside class="sidebar">
+
+      <div class="sidebar-brand">
+        <div class="logo-mark">DR</div>
+        <div class="brand-text">
+          <span class="brand-title">Dial Report</span>
+        </div>
       </div>
-    </div>
-    <div class="top-bar-meta">
-      <span class="format-tag">.xlsx</span>
-      <span class="format-tag">.xls</span>
-      <span class="format-tag">.csv</span>
-    </div>
-  </header>
 
-  <!-- ═══ APP BODY: two-column shell ═══ -->
-  <div class="app-body">
-
-    <!-- ───────── LEFT: Upload panel (fixed) ───────── -->
-    <aside class="upload-panel">
-      <div class="panel-card">
-        <h2 class="panel-title">Upload Files</h2>
-        <p class="panel-desc">Drag in one or more files, or browse to select them.</p>
+      <div class="sidebar-body">
 
         <div class="upload-zone" id="dropZone">
           <div class="upload-icon">
@@ -42,49 +33,59 @@
               <path d="M20 52h24" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
             </svg>
           </div>
-          <p class="upload-label">Drag &amp; drop <span class="highlight">.xlsx</span> or <span class="highlight">.csv</span> files here</p>
-          <p class="upload-sub">or</p>
-          <label class="upload-btn" for="fileInput">Browse Files</label>
+          <p class="upload-label">Drag &amp; drop files here</p>
+          <p class="upload-sub">.xlsx &nbsp;·&nbsp; .xls &nbsp;·&nbsp; .csv</p>
+          <label class="upload-btn" for="fileInput">Browse files</label>
           <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden multiple />
         </div>
 
         <p class="file-name" id="fileName">No files selected</p>
 
+        <div class="file-info-bar hidden" id="fileInfoBar">
+          <span class="file-info-summary" id="fileInfoSummary"></span>
+          <button class="file-info-toggle hidden" id="fileInfoToggle" type="button">Show files</button>
+        </div>
+        <div class="file-info-detail hidden" id="fileInfoDetail"></div>
+
         <!-- Live processing status -->
         <div class="process-status hidden" id="processStatus">
-          <div class="process-status-header">
-            <div class="processing-spinner"></div>
+          <div class="process-status-top">
+            <div class="process-spinner"></div>
             <div class="process-status-text">
               <span class="process-current" id="processCurrent">Preparing…</span>
               <span class="process-progress" id="processProgress"></span>
             </div>
+          </div>
+          <div class="process-bar-track">
+            <div class="process-bar-fill" id="processBarFill"></div>
           </div>
           <ul class="process-done-list" id="processDoneList"></ul>
         </div>
 
         <!-- Error Banner -->
         <div class="error-banner hidden" id="errorBanner">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span id="errorMessage">An error occurred.</span>
         </div>
+
       </div>
 
-      <p class="panel-footnote">Files are processed locally in your browser and are never uploaded anywhere.</p>
+      <p class="sidebar-footnote">Files are processed locally in your browser and are never uploaded anywhere.</p>
     </aside>
 
-    <!-- ───────── RIGHT: Results panel (scrollable) ───────── -->
+    <!-- ───────── RIGHT: light main content (results) ───────── -->
     <main class="results-panel">
 
       <!-- Empty state, shown before any file is processed -->
       <div class="empty-state" id="emptyState">
         <div class="empty-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-            <rect x="10" y="16" width="44" height="34" rx="4" stroke="currentColor" stroke-width="2.5"/>
-            <path d="M18 26h28M18 34h28M18 42h18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.55"/>
+            <rect x="10" y="16" width="44" height="34" rx="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M18 26h28M18 34h28M18 42h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
           </svg>
         </div>
         <h3 class="empty-title">No results yet</h3>
-        <p class="empty-desc">Upload a file on the left to see your analysis appear here.</p>
+        <p class="empty-desc">Upload a file to see your analysis appear here.</p>
       </div>
 
       <!-- Results content, hidden until processing succeeds -->
@@ -93,12 +94,8 @@
         <!-- ── STICKY: header + summary cards ── -->
         <div class="results-sticky">
           <div class="results-header">
-            <div>
+            <div class="results-header-text">
               <h2 class="results-title">Analysis Results</h2>
-              <div class="file-info-bar">
-                <span class="file-info-summary" id="fileInfoSummary"></span>
-                <button class="file-info-toggle hidden" id="fileInfoToggle" type="button">Show files</button>
-              </div>
             </div>
             <button class="reset-btn" id="resetBtn">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.57"/></svg>
@@ -106,59 +103,127 @@
             </button>
           </div>
 
-          <div class="file-info-detail hidden" id="fileInfoDetail"></div>
-
           <!-- ── SUMMARY METRICS ROW ── -->
           <div class="metrics-row">
 
-            <div class="stat-card card--p-total">
+            <div class="stat-card">
               <div class="card-label">Predictive Dials</div>
-              <div class="card-value" id="cntPCombined">—</div>
+              <div class="card-value-row">
+                <div class="card-value" id="cntPCombined">—</div>
+                <button class="copy-btn" type="button" data-copy-target="cntPCombined" aria-label="Copy Predictive Dials value">
+                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span class="copy-tooltip">Copied</span>
+                </button>
+              </div>
             </div>
 
-            <div class="stat-card card--b-remark">
+            <div class="stat-card">
               <div class="card-label">Broadcast Dials</div>
-              <div class="card-value" id="cntBRemarkContains">—</div>
+              <div class="card-value-row">
+                <div class="card-value" id="cntBRemarkContains">—</div>
+                <button class="copy-btn" type="button" data-copy-target="cntBRemarkContains" aria-label="Copy Broadcast Dials value">
+                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span class="copy-tooltip">Copied</span>
+                </button>
+              </div>
             </div>
 
-            <div class="stat-card card--m-type">
+            <div class="stat-card">
               <div class="card-label">Manual Dials</div>
-              <div class="card-value" id="cntMTypeEquals">—</div>
+              <div class="card-value-row">
+                <div class="card-value" id="cntMTypeEquals">—</div>
+                <button class="copy-btn" type="button" data-copy-target="cntMTypeEquals" aria-label="Copy Manual Dials value">
+                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span class="copy-tooltip">Copied</span>
+                </button>
+              </div>
             </div>
 
-            <div class="stat-card card--c-total">
+            <div class="stat-card">
               <div class="card-label">Unique Connected</div>
-              <div class="card-value" id="cntCUnique">—</div>
+              <div class="card-value-row">
+                <div class="card-value" id="cntCUnique">—</div>
+                <button class="copy-btn" type="button" data-copy-target="cntCUnique" aria-label="Copy Unique Connected value">
+                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span class="copy-tooltip">Copied</span>
+                </button>
+              </div>
             </div>
 
-            <div class="stat-card card--cwc">
+            <div class="stat-card">
               <div class="card-label">Connected with Client</div>
-              <div class="card-value" id="cntConnectedWithClient">—</div>
+              <div class="card-value-row">
+                <div class="card-value" id="cntConnectedWithClient">—</div>
+                <button class="copy-btn" type="button" data-copy-target="cntConnectedWithClient" aria-label="Copy Connected with Client value">
+                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span class="copy-tooltip">Copied</span>
+                </button>
+              </div>
             </div>
 
-            <div class="stat-card card--worked">
+            <div class="stat-card">
               <div class="card-label">Unique Worked Accounts</div>
-              <div class="card-value" id="cntUniqueWorked">—</div>
+              <div class="card-value-row">
+                <div class="card-value" id="cntUniqueWorked">—</div>
+                <button class="copy-btn" type="button" data-copy-target="cntUniqueWorked" aria-label="Copy Unique Worked Accounts value">
+                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span class="copy-tooltip">Copied</span>
+                </button>
+              </div>
             </div>
 
-            <div class="stat-card card--drop-system">
+            <div class="stat-card">
               <div class="card-label">Dropped by System (No Available Agent)</div>
-              <div class="card-value" id="cntDropSystem">—</div>
+              <div class="card-value-row">
+                <div class="card-value" id="cntDropSystem">—</div>
+                <button class="copy-btn" type="button" data-copy-target="cntDropSystem" aria-label="Copy Dropped by System value">
+                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span class="copy-tooltip">Copied</span>
+                </button>
+              </div>
             </div>
 
-            <div class="stat-card card--drop-client">
+            <div class="stat-card">
               <div class="card-label">Client Dropped</div>
-              <div class="card-value" id="cntDropClient">—</div>
+              <div class="card-value-row">
+                <div class="card-value" id="cntDropClient">—</div>
+                <button class="copy-btn" type="button" data-copy-target="cntDropClient" aria-label="Copy Client Dropped value">
+                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span class="copy-tooltip">Copied</span>
+                </button>
+              </div>
             </div>
 
-            <div class="stat-card card--pu">
+            <div class="stat-card">
               <div class="card-label">PU</div>
-              <div class="card-value" id="cntPU">—</div>
+              <div class="card-value-row">
+                <div class="card-value" id="cntPU">—</div>
+                <button class="copy-btn" type="button" data-copy-target="cntPU" aria-label="Copy PU value">
+                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span class="copy-tooltip">Copied</span>
+                </button>
+              </div>
             </div>
 
-            <div class="stat-card card--pm">
+            <div class="stat-card">
               <div class="card-label">PM</div>
-              <div class="card-value" id="cntPM">—</div>
+              <div class="card-value-row">
+                <div class="card-value" id="cntPM">—</div>
+                <button class="copy-btn" type="button" data-copy-target="cntPM" aria-label="Copy PM value">
+                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span class="copy-tooltip">Copied</span>
+                </button>
+              </div>
             </div>
 
           </div>

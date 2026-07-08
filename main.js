@@ -6,6 +6,7 @@ const processStatus    = document.getElementById('processStatus');
 const processCurrent   = document.getElementById('processCurrent');
 const processProgress  = document.getElementById('processProgress');
 const processDoneList  = document.getElementById('processDoneList');
+const processBarFill   = document.getElementById('processBarFill');
 const resultsSection  = document.getElementById('resultsSection');
 const emptyState      = document.getElementById('emptyState');
 const errorBanner     = document.getElementById('errorBanner');
@@ -13,6 +14,7 @@ const errorMessage    = document.getElementById('errorMessage');
 const fileInfoSummary = document.getElementById('fileInfoSummary');
 const fileInfoDetail  = document.getElementById('fileInfoDetail');
 const fileInfoToggle  = document.getElementById('fileInfoToggle');
+const fileInfoBar     = document.getElementById('fileInfoBar');
 const breakdownBody   = document.getElementById('breakdownBody');
 const resetBtn        = document.getElementById('resetBtn');
 
@@ -58,6 +60,7 @@ fileInfoToggle.addEventListener('click', () => {
 function handleFiles(files) {
   hideError();
   resultsSection.classList.add('hidden');
+  fileInfoBar.classList.add('hidden');
 
   const invalid = files.filter(f => !f.name.match(/\.(xlsx|xls|csv)$/i));
   if (invalid.length) {
@@ -104,7 +107,7 @@ async function processAllWorkbooks(fileData, files) {
   // Cross-file dedup for "Connected with Client" accounts
   const seenConnectedClientAccounts = new Map();
 
-  // Cross-file dedup for "Unique Worked Accounts" (Status not NEW / ABORT)
+  // Cross-file dedup for "Unique Worked Accounts" (Status not NEW / ABORT / UNLOCKED / LOCKED)
   const seenWorkedAccounts = new Map();
 
   // Grand totals
@@ -218,10 +221,10 @@ async function processAllWorkbooks(fileData, files) {
         if (statusLow === 'pm') filePM++;
       }
 
-      /* ── Connected: valid Call Duration (not blank / not 00:00:00), unique Account No. ── */
+      /* ── Connected: valid Call Duration (not blank/missing — "00:00:00" now counts), unique Account No. ── */
       if (callDurationKey) {
         const durRaw = String(row[callDurationKey] ?? '').trim();
-        const hasValidDuration = durRaw !== '' && durRaw !== '00:00:00';
+        const hasValidDuration = durRaw !== '';
 
         if (hasValidDuration) {
           const acctRaw = accountNoKey ? String(row[accountNoKey] ?? '').trim() : '';
@@ -258,10 +261,15 @@ async function processAllWorkbooks(fileData, files) {
         }
       }
 
-      /* ── Unique Worked Accounts: exclude Status "NEW" or "ABORT", dedupe by Account No. ── */
+      /* ── Unique Worked Accounts: exclude Status "NEW", "ABORT", "UNLOCKED",
+         or "LOCKED", dedupe by Account No. ── */
       if (statusKey) {
         const statusValRaw = String(row[statusKey] ?? '').trim().toLowerCase();
-        const isExcluded = statusValRaw === 'new' || statusValRaw === 'abort';
+        const isExcluded =
+          statusValRaw === 'new' ||
+          statusValRaw === 'abort' ||
+          statusValRaw === 'unlocked' ||
+          statusValRaw === 'locked';
 
         if (!isExcluded) {
           const acctRaw = accountNoKey ? String(row[accountNoKey] ?? '').trim() : '';
@@ -335,6 +343,7 @@ async function processAllWorkbooks(fileData, files) {
 
   /* File meta — summary line always visible; detailed list auto-hidden
      to reduce clutter, with a toggle to reveal it on demand. */
+  fileInfoBar.classList.remove('hidden');
   if (files.length === 1) {
     const f = files[0];
     fileInfoSummary.textContent =
@@ -406,12 +415,14 @@ function initProcessingStatus(totalFiles) {
   processDoneList.innerHTML = '';
   processCurrent.textContent = 'Preparing…';
   processProgress.textContent = `0 of ${totalFiles} file${totalFiles > 1 ? 's' : ''} processed`;
+  processBarFill.style.width = '0%';
   processStatus.classList.remove('hidden');
 }
 
 function setCurrentProcessingFile(name, index, totalFiles) {
   processCurrent.textContent = `Processing: ${name}`;
   processProgress.textContent = `${index} of ${totalFiles} file${totalFiles > 1 ? 's' : ''} processed`;
+  processBarFill.style.width = `${Math.round((index / totalFiles) * 100)}%`;
 }
 
 function markFileDone(name, rowCount, index, totalFiles) {
@@ -425,6 +436,7 @@ function markFileDone(name, rowCount, index, totalFiles) {
 
   const doneCount = index + 1;
   processProgress.textContent = `${doneCount} of ${totalFiles} file${totalFiles > 1 ? 's' : ''} processed`;
+  processBarFill.style.width = `${Math.round((doneCount / totalFiles) * 100)}%`;
 }
 
 /* Yields control back to the browser so it can paint the status panel
@@ -451,6 +463,7 @@ function resetAll() {
   fileInfoDetail.textContent  = '';
   fileInfoDetail.classList.add('hidden');
   fileInfoToggle.classList.add('hidden');
+  fileInfoBar.classList.add('hidden');
 
   [elCntPCombined, elCntBRemarkContains, elCntMTypeEquals, elCntCUnique, elCntConnectedWithClient, elCntUniqueWorked, elCntDropSystem, elCntDropClient, elCntPU, elCntPM]
     .forEach(el => { if (el) el.textContent = '—'; });
@@ -463,4 +476,38 @@ function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* ===== COPY-TO-CLIPBOARD (summary metric cards) ===== */
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const targetEl = document.getElementById(btn.dataset.copyTarget);
+    if (!targetEl) return;
+
+    const value = targetEl.textContent.trim();
+    if (!value || value === '—') return; // nothing computed yet
+
+    const showCopiedState = () => {
+      clearTimeout(btn._copyTimeout);
+      btn.classList.add('copied');
+      btn._copyTimeout = setTimeout(() => btn.classList.remove('copied'), 1500);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(value).then(showCopiedState).catch(() => fallbackCopy(value, showCopiedState));
+    } else {
+      fallbackCopy(value, showCopiedState);
+    }
+  });
+});
+
+function fallbackCopy(text, onSuccess) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); onSuccess(); } catch (err) { console.error(err); }
+  document.body.removeChild(ta);
 }
