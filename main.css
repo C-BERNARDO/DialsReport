@@ -466,11 +466,20 @@ button, input { font-family: inherit; }
 
 /* ── Statistic cards: every card shares the same clean, neutral
      appearance. Interactivity comes from a subtle hover background
-     shift rather than static per-metric colors. ── */
+     shift rather than static per-metric colors. Cards are grouped into
+     5 aligned columns, each stacking its related metrics vertically. ── */
 .metrics-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
+  align-items: start;
   gap: 12px;
+}
+
+.metrics-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 
 .stat-card {
@@ -655,7 +664,7 @@ button, input { font-family: inherit; }
 
 /* ═══════════════════════ RESPONSIVE ═══════════════════════ */
 @media (max-width: 1200px) {
-  .metrics-row { grid-template-columns: repeat(4, 1fr); }
+  .metrics-row { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 900px) {
@@ -670,11 +679,11 @@ button, input { font-family: inherit; }
     overflow-y: visible;
     padding: 22px 18px 36px;
   }
-  .metrics-row { grid-template-columns: repeat(3, 1fr); }
+  .metrics-row { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 640px) {
-  .metrics-row { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 560px) {
+  .metrics-row { grid-template-columns: 1fr; }
   .results-header { flex-direction: column; }
 }
 

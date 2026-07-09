@@ -5,18 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dial Report</title>
 
-  <!-- Favicon: relative paths (no leading slash) so this resolves correctly
-       whether the site is hosted at a domain root or under a GitHub Pages
-       project subpath (https://user.github.io/repo-name/). SVG is listed
-       first for browsers that support it, with PNG/ICO fallbacks for those
-       that don't. The "?v=2" query string busts browser favicon caching,
-       which otherwise persists stubbornly across deploys — bump this
-       version string any time the favicon file itself changes. -->
-  <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=2" />
-  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=2" />
-  <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png?v=2" />
-  <link rel="shortcut icon" href="./favicon.ico?v=2" />
-  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=2" />
+  <!-- Favicon: embedded directly as a base64 data URI so the app stays a
+       clean 3-file bundle (index.html / main.css / main.js) — no separate
+       image file to lose track of, deploy, or worry about caching/paths
+       for. The icon is baked into this document and travels with it. -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNyIgZmlsbD0iIzE3MTcxNyIvPgogIDxwYXRoIGZpbGw9IiMxMGEzN2YiIGQ9Ik0xMC42MiAxNC43OWMxLjQ0IDIuODMgMy43NiA1LjE0IDYuNTkgNi41OWwyLjItMi4yYy4yNy0uMjcuNjctLjM2IDEuMDItLjI0IDEuMTIuMzcgMi4zMy41NyAzLjU3LjU3LjU1IDAgMSAuNDUgMSAxVjI0YzAgLjU1LS40NSAxLTEgMS05LjM5IDAtMTctNy42MS0xNy0xNyAwLS41NS40NS0xIDEtMWgzLjVjLjU1IDAgMSAuNDUgMSAxIDAgMS4yNS4yIDIuNDUuNTcgMy41Ny4xMS4zNS4wMy43NC0uMjUgMS4wMmwtMi4yIDIuMnoiLz4KPC9zdmc+Cg==" />
 
   <link rel="stylesheet" href="main.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -115,126 +108,153 @@
             </button>
           </div>
 
-          <!-- ── SUMMARY METRICS ROW ── -->
+          <!-- ── SUMMARY METRICS GRID: 5 columns, stacked boxes ── -->
           <div class="metrics-row">
 
-            <div class="stat-card">
-              <div class="card-label">Predictive Dials</div>
-              <div class="card-value-row">
-                <div class="card-value" id="cntPCombined">—</div>
-                <button class="copy-btn" type="button" data-copy-target="cntPCombined" aria-label="Copy Predictive Dials value">
-                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span class="copy-tooltip">Copied</span>
-                </button>
+            <!-- Column 1: dial volume by method -->
+            <div class="metrics-col">
+              <div class="stat-card">
+                <div class="card-label">Predictive Dials</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntPCombined">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntPCombined" aria-label="Copy Predictive Dials value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="card-label">Broadcast Dials</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntBRemarkContains">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntBRemarkContains" aria-label="Copy Broadcast Dials value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="card-label">Manual Dials</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntMTypeEquals">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntMTypeEquals" aria-label="Copy Manual Dials value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div class="stat-card">
-              <div class="card-label">Broadcast Dials</div>
-              <div class="card-value-row">
-                <div class="card-value" id="cntBRemarkContains">—</div>
-                <button class="copy-btn" type="button" data-copy-target="cntBRemarkContains" aria-label="Copy Broadcast Dials value">
-                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span class="copy-tooltip">Copied</span>
-                </button>
+            <!-- Column 2: worked / dialed accounts -->
+            <div class="metrics-col">
+              <div class="stat-card">
+                <div class="card-label">Worked Accounts (All Touchpoints)</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntUniqueWorked">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntUniqueWorked" aria-label="Copy Worked Accounts (All Touchpoints) value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="card-label">Worked Accounts (Dialed Only)</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntAccountsDialed">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntAccountsDialed" aria-label="Copy Worked Accounts (Dialed Only) value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div class="stat-card">
-              <div class="card-label">Manual Dials</div>
-              <div class="card-value-row">
-                <div class="card-value" id="cntMTypeEquals">—</div>
-                <button class="copy-btn" type="button" data-copy-target="cntMTypeEquals" aria-label="Copy Manual Dials value">
-                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span class="copy-tooltip">Copied</span>
-                </button>
+            <!-- Column 3: connection quality -->
+            <div class="metrics-col">
+              <div class="stat-card">
+                <div class="card-label">Accounts with Active Number</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntCUnique">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntCUnique" aria-label="Copy Accounts with Active Number value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="card-label">Connected</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntConnectedWithClient">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntConnectedWithClient" aria-label="Copy Connected value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div class="stat-card">
-              <div class="card-label">Unique Connected</div>
-              <div class="card-value-row">
-                <div class="card-value" id="cntCUnique">—</div>
-                <button class="copy-btn" type="button" data-copy-target="cntCUnique" aria-label="Copy Unique Connected value">
-                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span class="copy-tooltip">Copied</span>
-                </button>
+            <!-- Column 4: dropped calls -->
+            <div class="metrics-col">
+              <div class="stat-card">
+                <div class="card-label">Dropped by System (No Available Agent)</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntDropSystem">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntDropSystem" aria-label="Copy Dropped by System value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="card-label">Client Dropped</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntDropClient">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntDropClient" aria-label="Copy Client Dropped value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div class="stat-card">
-              <div class="card-label">Connected with Client</div>
-              <div class="card-value-row">
-                <div class="card-value" id="cntConnectedWithClient">—</div>
-                <button class="copy-btn" type="button" data-copy-target="cntConnectedWithClient" aria-label="Copy Connected with Client value">
-                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span class="copy-tooltip">Copied</span>
-                </button>
+            <!-- Column 5: status codes -->
+            <div class="metrics-col">
+              <div class="stat-card">
+                <div class="card-label">PM</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntPM">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntPM" aria-label="Copy PM value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div class="stat-card">
-              <div class="card-label">Unique Worked Accounts</div>
-              <div class="card-value-row">
-                <div class="card-value" id="cntUniqueWorked">—</div>
-                <button class="copy-btn" type="button" data-copy-target="cntUniqueWorked" aria-label="Copy Unique Worked Accounts value">
-                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span class="copy-tooltip">Copied</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="stat-card">
-              <div class="card-label">Dropped by System (No Available Agent)</div>
-              <div class="card-value-row">
-                <div class="card-value" id="cntDropSystem">—</div>
-                <button class="copy-btn" type="button" data-copy-target="cntDropSystem" aria-label="Copy Dropped by System value">
-                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span class="copy-tooltip">Copied</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="stat-card">
-              <div class="card-label">Client Dropped</div>
-              <div class="card-value-row">
-                <div class="card-value" id="cntDropClient">—</div>
-                <button class="copy-btn" type="button" data-copy-target="cntDropClient" aria-label="Copy Client Dropped value">
-                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span class="copy-tooltip">Copied</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="stat-card">
-              <div class="card-label">PU</div>
-              <div class="card-value-row">
-                <div class="card-value" id="cntPU">—</div>
-                <button class="copy-btn" type="button" data-copy-target="cntPU" aria-label="Copy PU value">
-                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span class="copy-tooltip">Copied</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="stat-card">
-              <div class="card-label">PM</div>
-              <div class="card-value-row">
-                <div class="card-value" id="cntPM">—</div>
-                <button class="copy-btn" type="button" data-copy-target="cntPM" aria-label="Copy PM value">
-                  <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                  <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  <span class="copy-tooltip">Copied</span>
-                </button>
+              <div class="stat-card">
+                <div class="card-label">PU</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntPU">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntPU" aria-label="Copy PU value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -248,16 +268,17 @@
               <thead>
                 <tr>
                   <th class="col-source">Source File</th>
+                  <th class="col-worked">Worked Accounts (All Touchpoints)</th>
+                  <th class="col-dialed">Worked Accounts (Dialed Only)</th>
                   <th class="col-predictive">Predictive Dials</th>
                   <th class="col-broadcast">Broadcast Dials</th>
                   <th class="col-manual">Manual Dials</th>
-                  <th class="col-connected">Unique Connected</th>
-                  <th class="col-cwc">Connected with Client</th>
-                  <th class="col-worked">Unique Worked Accounts</th>
+                  <th class="col-connected">Accounts with Active Number</th>
+                  <th class="col-cwc">Connected</th>
                   <th class="col-drop-system">Dropped by System</th>
                   <th class="col-drop-client">Client Dropped</th>
-                  <th class="col-pu">PU</th>
                   <th class="col-pm">PM</th>
+                  <th class="col-pu">PU</th>
                 </tr>
               </thead>
               <tbody id="breakdownBody"></tbody>

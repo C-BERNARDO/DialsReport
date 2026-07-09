@@ -25,6 +25,7 @@ const elCntMTypeEquals     = document.getElementById('cntMTypeEquals');
 const elCntCUnique         = document.getElementById('cntCUnique');
 const elCntConnectedWithClient = document.getElementById('cntConnectedWithClient');
 const elCntUniqueWorked    = document.getElementById('cntUniqueWorked');
+const elCntAccountsDialed  = document.getElementById('cntAccountsDialed');
 const elCntDropSystem      = document.getElementById('cntDropSystem');
 const elCntDropClient      = document.getElementById('cntDropClient');
 const elCntPU               = document.getElementById('cntPU');
@@ -110,6 +111,10 @@ async function processAllWorkbooks(fileData, files) {
   // Cross-file dedup for "Unique Worked Accounts" (Status not NEW / ABORT / UNLOCKED / LOCKED)
   const seenWorkedAccounts = new Map();
 
+  // Cross-file dedup for "Accounts Dialed" (unique accounts hit by
+  // Predictive, Broadcast, or Manual dials — merged, not summed)
+  const seenDialedAccounts = new Map();
+
   // Grand totals
   let totalPredictive = 0;
   let totalBroadcast  = 0;
@@ -173,6 +178,7 @@ async function processAllWorkbooks(fileData, files) {
     let fileDropClient = 0;
     let filePU = 0;
     let filePM = 0;
+    let fileAccountsDialed = 0;
 
     // Per-file seen accounts (for per-file unique connected)
     const fileSeenAccounts = new Map();
@@ -182,6 +188,9 @@ async function processAllWorkbooks(fileData, files) {
 
     // Per-file seen accounts (for per-file unique "Worked Accounts")
     const fileSeenWorkedAccounts = new Map();
+
+    // Per-file seen accounts (for per-file unique "Accounts Dialed")
+    const fileSeenDialedAccounts = new Map();
 
 
     rows.forEach(row => {
@@ -198,6 +207,22 @@ async function processAllWorkbooks(fileData, files) {
       if (p_remark || p_type) filePredictive++;
       if (b_remark)           fileBroadcast++;
       if (m_type)             fileManual++;
+
+      /* ── Accounts Dialed: merge Predictive/Broadcast/Manual matches into
+         one set, deduped by Account No. — NOT a sum of the three counts. ── */
+      if (p_remark || p_type || b_remark || m_type) {
+        const acctRaw = accountNoKey ? String(row[accountNoKey] ?? '').trim() : '';
+        const acctKey = acctRaw.toLowerCase();
+
+        if (!fileSeenDialedAccounts.has(acctKey)) {
+          fileSeenDialedAccounts.set(acctKey, true);
+          fileAccountsDialed++;
+        }
+        // Also track global cross-file unique
+        if (!seenDialedAccounts.has(acctKey)) {
+          seenDialedAccounts.set(acctKey, true);
+        }
+      }
 
       /* ── Dropped Calls: Call Status is "DROPPED", split by Remark By ── */
       if (callStatusKey) {
@@ -308,6 +333,7 @@ async function processAllWorkbooks(fileData, files) {
       dropClient:          fileDropClient,
       pu:                  filePU,
       pm:                  filePM,
+      accountsDialed:      fileAccountsDialed,
     });
 
     markFileDone(file.name, rows.length, i, totalFiles);
@@ -323,6 +349,10 @@ async function processAllWorkbooks(fileData, files) {
   // Global unique "Worked Accounts" = cross-file deduplicated count
   const globalUniqueWorked = seenWorkedAccounts.size;
 
+  // Global unique "Accounts Dialed" = merged Predictive/Broadcast/Manual
+  // matches, deduplicated by Account No. across all files (not summed)
+  const globalAccountsDialed = seenDialedAccounts.size;
+
   if (!totalRows) {
     hideProcessing();
     showError('All uploaded sheets appear to be empty or have no data rows.');
@@ -336,6 +366,7 @@ async function processAllWorkbooks(fileData, files) {
   animateCount(elCntCUnique,         globalUniqueConnected);
   animateCount(elCntConnectedWithClient, globalUniqueConnectedWithClient);
   animateCount(elCntUniqueWorked,    globalUniqueWorked);
+  animateCount(elCntAccountsDialed,  globalAccountsDialed);
   animateCount(elCntDropSystem,      totalDropSystem);
   animateCount(elCntDropClient,      totalDropClient);
   animateCount(elCntPU,              totalPU);
@@ -378,16 +409,17 @@ function buildSummaryTable(fileStats) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="source-file-cell" title="${escapeHtml(stat.name)}">${escapeHtml(stat.name)}</td>
+      <td class="col-worked num-cell">${stat.uniqueWorked.toLocaleString()}</td>
+      <td class="col-dialed num-cell">${stat.accountsDialed.toLocaleString()}</td>
       <td class="col-predictive num-cell">${stat.predictive.toLocaleString()}</td>
       <td class="col-broadcast num-cell">${stat.broadcast.toLocaleString()}</td>
       <td class="col-manual num-cell">${stat.manual.toLocaleString()}</td>
       <td class="col-connected num-cell">${stat.connected.toLocaleString()}</td>
       <td class="col-cwc num-cell">${stat.connectedWithClient.toLocaleString()}</td>
-      <td class="col-worked num-cell">${stat.uniqueWorked.toLocaleString()}</td>
       <td class="col-drop-system num-cell">${stat.dropSystem.toLocaleString()}</td>
       <td class="col-drop-client num-cell">${stat.dropClient.toLocaleString()}</td>
-      <td class="col-pu num-cell">${stat.pu.toLocaleString()}</td>
       <td class="col-pm num-cell">${stat.pm.toLocaleString()}</td>
+      <td class="col-pu num-cell">${stat.pu.toLocaleString()}</td>
     `;
     frag.appendChild(tr);
   });
@@ -465,7 +497,7 @@ function resetAll() {
   fileInfoToggle.classList.add('hidden');
   fileInfoBar.classList.add('hidden');
 
-  [elCntPCombined, elCntBRemarkContains, elCntMTypeEquals, elCntCUnique, elCntConnectedWithClient, elCntUniqueWorked, elCntDropSystem, elCntDropClient, elCntPU, elCntPM]
+  [elCntPCombined, elCntBRemarkContains, elCntMTypeEquals, elCntAccountsDialed, elCntCUnique, elCntConnectedWithClient, elCntUniqueWorked, elCntDropSystem, elCntDropClient, elCntPU, elCntPM]
     .forEach(el => { if (el) el.textContent = '—'; });
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
