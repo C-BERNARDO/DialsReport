@@ -655,7 +655,9 @@ button, input { font-family: inherit; }
 
 /* Only the two meaningful groups keep a color; everything else neutral */
 .col-connected,
-.col-cwc          { color: var(--accent); font-weight: 500; }
+.col-cwc,
+.col-connected-predictive,
+.col-connected-manual { color: var(--accent); font-weight: 500; }
 .col-drop-system,
 .col-drop-client  { color: var(--warn); font-weight: 500; }
 

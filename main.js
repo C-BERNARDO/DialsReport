@@ -24,6 +24,8 @@ const elCntBRemarkContains = document.getElementById('cntBRemarkContains');
 const elCntMTypeEquals     = document.getElementById('cntMTypeEquals');
 const elCntCUnique         = document.getElementById('cntCUnique');
 const elCntConnectedWithClient = document.getElementById('cntConnectedWithClient');
+const elCntConnectedPredictive = document.getElementById('cntConnectedPredictive');
+const elCntConnectedManual     = document.getElementById('cntConnectedManual');
 const elCntUniqueWorked    = document.getElementById('cntUniqueWorked');
 const elCntAccountsDialed  = document.getElementById('cntAccountsDialed');
 const elCntDropSystem      = document.getElementById('cntDropSystem');
@@ -105,8 +107,14 @@ async function processAllWorkbooks(fileData, files) {
   // Cross-file dedup for connected accounts
   const seenAccountNos = new Map();
 
-  // Cross-file dedup for "Connected with Client" accounts
+  // Cross-file dedup for "Connected (All Touchpoints)" accounts
   const seenConnectedClientAccounts = new Map();
+
+  // Cross-file dedup for "Connected (Predictive Dials)" accounts
+  const seenConnectedPredictive = new Map();
+
+  // Cross-file dedup for "Connected (Manual Dials)" accounts
+  const seenConnectedManual = new Map();
 
   // Cross-file dedup for "Unique Worked Accounts" (Status not NEW / ABORT / UNLOCKED / LOCKED)
   const seenWorkedAccounts = new Map();
@@ -173,6 +181,8 @@ async function processAllWorkbooks(fileData, files) {
     let fileManual     = 0;
     let fileConnected  = 0;
     let fileConnectedWithClient = 0;
+    let fileConnectedPredictive = 0;
+    let fileConnectedManual     = 0;
     let fileUniqueWorked        = 0;
     let fileDropSystem = 0;
     let fileDropClient = 0;
@@ -185,6 +195,12 @@ async function processAllWorkbooks(fileData, files) {
 
     // Per-file seen accounts (for per-file unique "Connected with Client")
     const fileSeenConnectedClientAccounts = new Map();
+
+    // Per-file seen accounts (for per-file unique "Connected (Predictive Dials)")
+    const fileSeenConnectedPredictive = new Map();
+
+    // Per-file seen accounts (for per-file unique "Connected (Manual Dials)")
+    const fileSeenConnectedManual = new Map();
 
     // Per-file seen accounts (for per-file unique "Worked Accounts")
     const fileSeenWorkedAccounts = new Map();
@@ -266,7 +282,10 @@ async function processAllWorkbooks(fileData, files) {
         }
       }
 
-      /* ── Connected with Client: unique Account No. where Call Status is "CONNECTED" ── */
+      /* ── Connected: unique Account No. where Call Status is "CONNECTED".
+         Tracked at three scopes from the SAME Call Status check — all
+         touchpoints, predictive dials only, and manual dials only — each
+         with its own independent dedup set. ── */
       if (callStatusKey) {
         const statusRaw = String(row[callStatusKey] ?? '').trim().toLowerCase();
         const isConnected = statusRaw === 'connected';
@@ -275,13 +294,35 @@ async function processAllWorkbooks(fileData, files) {
           const acctRaw = accountNoKey ? String(row[accountNoKey] ?? '').trim() : '';
           const acctKey = acctRaw.toLowerCase();
 
+          // All touchpoints
           if (!fileSeenConnectedClientAccounts.has(acctKey)) {
             fileSeenConnectedClientAccounts.set(acctKey, true);
             fileConnectedWithClient++;
           }
-          // Also track global cross-file unique
           if (!seenConnectedClientAccounts.has(acctKey)) {
             seenConnectedClientAccounts.set(acctKey, true);
+          }
+
+          // Predictive Dials only
+          if (p_remark || p_type) {
+            if (!fileSeenConnectedPredictive.has(acctKey)) {
+              fileSeenConnectedPredictive.set(acctKey, true);
+              fileConnectedPredictive++;
+            }
+            if (!seenConnectedPredictive.has(acctKey)) {
+              seenConnectedPredictive.set(acctKey, true);
+            }
+          }
+
+          // Manual Dials only
+          if (m_type) {
+            if (!fileSeenConnectedManual.has(acctKey)) {
+              fileSeenConnectedManual.set(acctKey, true);
+              fileConnectedManual++;
+            }
+            if (!seenConnectedManual.has(acctKey)) {
+              seenConnectedManual.set(acctKey, true);
+            }
           }
         }
       }
@@ -328,6 +369,8 @@ async function processAllWorkbooks(fileData, files) {
       manual:             fileManual,
       connected:          fileConnected,
       connectedWithClient: fileConnectedWithClient,
+      connectedPredictive: fileConnectedPredictive,
+      connectedManual:     fileConnectedManual,
       uniqueWorked:        fileUniqueWorked,
       dropSystem:          fileDropSystem,
       dropClient:          fileDropClient,
@@ -343,8 +386,14 @@ async function processAllWorkbooks(fileData, files) {
   // Global unique connected = cross-file deduplicated count
   const globalUniqueConnected = seenAccountNos.size;
 
-  // Global unique "Connected with Client" = cross-file deduplicated count
+  // Global unique "Connected (All Touchpoints)" = cross-file deduplicated count
   const globalUniqueConnectedWithClient = seenConnectedClientAccounts.size;
+
+  // Global unique "Connected (Predictive Dials)" = cross-file deduplicated count
+  const globalConnectedPredictive = seenConnectedPredictive.size;
+
+  // Global unique "Connected (Manual Dials)" = cross-file deduplicated count
+  const globalConnectedManual = seenConnectedManual.size;
 
   // Global unique "Worked Accounts" = cross-file deduplicated count
   const globalUniqueWorked = seenWorkedAccounts.size;
@@ -365,6 +414,8 @@ async function processAllWorkbooks(fileData, files) {
   animateCount(elCntMTypeEquals,     totalManual);
   animateCount(elCntCUnique,         globalUniqueConnected);
   animateCount(elCntConnectedWithClient, globalUniqueConnectedWithClient);
+  animateCount(elCntConnectedPredictive, globalConnectedPredictive);
+  animateCount(elCntConnectedManual,     globalConnectedManual);
   animateCount(elCntUniqueWorked,    globalUniqueWorked);
   animateCount(elCntAccountsDialed,  globalAccountsDialed);
   animateCount(elCntDropSystem,      totalDropSystem);
@@ -416,6 +467,8 @@ function buildSummaryTable(fileStats) {
       <td class="col-manual num-cell">${stat.manual.toLocaleString()}</td>
       <td class="col-connected num-cell">${stat.connected.toLocaleString()}</td>
       <td class="col-cwc num-cell">${stat.connectedWithClient.toLocaleString()}</td>
+      <td class="col-connected-predictive num-cell">${stat.connectedPredictive.toLocaleString()}</td>
+      <td class="col-connected-manual num-cell">${stat.connectedManual.toLocaleString()}</td>
       <td class="col-drop-system num-cell">${stat.dropSystem.toLocaleString()}</td>
       <td class="col-drop-client num-cell">${stat.dropClient.toLocaleString()}</td>
       <td class="col-pm num-cell">${stat.pm.toLocaleString()}</td>
@@ -497,7 +550,7 @@ function resetAll() {
   fileInfoToggle.classList.add('hidden');
   fileInfoBar.classList.add('hidden');
 
-  [elCntPCombined, elCntBRemarkContains, elCntMTypeEquals, elCntAccountsDialed, elCntCUnique, elCntConnectedWithClient, elCntUniqueWorked, elCntDropSystem, elCntDropClient, elCntPU, elCntPM]
+  [elCntPCombined, elCntBRemarkContains, elCntMTypeEquals, elCntAccountsDialed, elCntCUnique, elCntConnectedWithClient, elCntConnectedPredictive, elCntConnectedManual, elCntUniqueWorked, elCntDropSystem, elCntDropClient, elCntPU, elCntPM]
     .forEach(el => { if (el) el.textContent = '—'; });
 
   window.scrollTo({ top: 0, behavior: 'smooth' });

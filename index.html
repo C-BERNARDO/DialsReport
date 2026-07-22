@@ -175,10 +175,7 @@
                   </button>
                 </div>
               </div>
-            </div>
 
-            <!-- Column 3: connection quality -->
-            <div class="metrics-col">
               <div class="stat-card">
                 <div class="card-label">Accounts with Active Number</div>
                 <div class="card-value-row">
@@ -190,12 +187,39 @@
                   </button>
                 </div>
               </div>
+            </div>
 
+            <!-- Column 3: connection quality -->
+            <div class="metrics-col">
               <div class="stat-card">
-                <div class="card-label">Connected</div>
+                <div class="card-label">Connected (All Touchpoints)</div>
                 <div class="card-value-row">
                   <div class="card-value" id="cntConnectedWithClient">—</div>
-                  <button class="copy-btn" type="button" data-copy-target="cntConnectedWithClient" aria-label="Copy Connected value">
+                  <button class="copy-btn" type="button" data-copy-target="cntConnectedWithClient" aria-label="Copy Connected (All Touchpoints) value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="card-label">Connected (Predictive Dials)</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntConnectedPredictive">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntConnectedPredictive" aria-label="Copy Connected (Predictive Dials) value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="card-label">Connected (Manual Dials)</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntConnectedManual">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntConnectedManual" aria-label="Copy Connected (Manual Dials) value">
                     <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
                     <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     <span class="copy-tooltip">Copied</span>
@@ -274,7 +298,9 @@
                   <th class="col-broadcast">Broadcast Dials</th>
                   <th class="col-manual">Manual Dials</th>
                   <th class="col-connected">Accounts with Active Number</th>
-                  <th class="col-cwc">Connected</th>
+                  <th class="col-cwc">Connected (All Touchpoints)</th>
+                  <th class="col-connected-predictive">Connected (Predictive Dials)</th>
+                  <th class="col-connected-manual">Connected (Manual Dials)</th>
                   <th class="col-drop-system">Dropped by System</th>
                   <th class="col-drop-client">Client Dropped</th>
                   <th class="col-pm">PM</th>
