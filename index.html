@@ -282,6 +282,45 @@
               </div>
             </div>
 
+            <!-- Column 6: talk time and agents -->
+            <div class="metrics-col">
+              <div class="stat-card">
+                <div class="card-label">Total Talk Time</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntTalkTime">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntTalkTime" aria-label="Copy Total Talk Time value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="card-label">Manual Talk Time</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntManualTalkTime">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntManualTalkTime" aria-label="Copy Manual Talk Time value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="card-label">Manual Call Agents</div>
+                <div class="card-value-row">
+                  <div class="card-value" id="cntManualCallAgents">—</div>
+                  <button class="copy-btn" type="button" data-copy-target="cntManualCallAgents" aria-label="Copy Manual Call Agents value">
+                    <svg class="icon-copy" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    <svg class="icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="copy-tooltip">Copied</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -305,6 +344,9 @@
                   <th class="col-drop-client">Client Dropped</th>
                   <th class="col-pm">PM</th>
                   <th class="col-pu">PU</th>
+                  <th class="col-talktime">Total Talk Time</th>
+                  <th class="col-manual-talktime">Manual Talk Time</th>
+                  <th class="col-manual-agents">Manual Call Agents</th>
                 </tr>
               </thead>
               <tbody id="breakdownBody"></tbody>

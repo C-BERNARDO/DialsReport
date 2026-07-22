@@ -467,10 +467,10 @@ button, input { font-family: inherit; }
 /* ── Statistic cards: every card shares the same clean, neutral
      appearance. Interactivity comes from a subtle hover background
      shift rather than static per-metric colors. Cards are grouped into
-     5 aligned columns, each stacking its related metrics vertically. ── */
+     6 aligned columns, each stacking its related metrics vertically. ── */
 .metrics-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   align-items: start;
   gap: 12px;
 }
@@ -601,13 +601,14 @@ button, input { font-family: inherit; }
 }
 
 .table-scroll {
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
   max-height: 58vh;
+  -webkit-overflow-scrolling: touch;
 }
 
 .breakdown-table {
   width: 100%;
-  min-width: 1080px;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 13px;
@@ -622,15 +623,23 @@ button, input { font-family: inherit; }
   font-weight: 600;
   font-size: 12px;
   text-align: right;
-  white-space: nowrap;
-  padding: 12px 16px;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
+  line-height: 1.3;
+  max-width: 120px;
+  vertical-align: middle;
 }
 
-.breakdown-table th.col-source { text-align: left; }
+.breakdown-table th.col-source { 
+  text-align: left;
+  max-width: 160px;
+}
 
 .breakdown-table tbody td {
-  padding: 11px 16px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border-light);
   white-space: nowrap;
   color: var(--text-secondary);
@@ -657,7 +666,8 @@ button, input { font-family: inherit; }
 .col-connected,
 .col-cwc,
 .col-connected-predictive,
-.col-connected-manual { color: var(--accent); font-weight: 500; }
+.col-connected-manual,
+.col-talktime     { color: var(--accent); font-weight: 500; }
 .col-drop-system,
 .col-drop-client  { color: var(--warn); font-weight: 500; }
 
@@ -665,8 +675,29 @@ button, input { font-family: inherit; }
 .hidden { display: none !important; }
 
 /* ═══════════════════════ RESPONSIVE ═══════════════════════ */
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
+  .metrics-row { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 1000px) {
   .metrics-row { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 1200px) {
+  .breakdown-table thead th {
+    padding: 9px 10px;
+    font-size: 11px;
+    max-width: 100px;
+  }
+  
+  .breakdown-table th.col-source {
+    max-width: 140px;
+  }
+  
+  .breakdown-table tbody td {
+    padding: 9px 10px;
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 900px) {
@@ -682,6 +713,21 @@ button, input { font-family: inherit; }
     padding: 22px 18px 36px;
   }
   .metrics-row { grid-template-columns: repeat(2, 1fr); }
+  
+  .breakdown-table thead th {
+    padding: 8px 9px;
+    font-size: 10.5px;
+    max-width: 90px;
+  }
+  
+  .breakdown-table th.col-source {
+    max-width: 120px;
+  }
+  
+  .breakdown-table tbody td {
+    padding: 8px 9px;
+    font-size: 11px;
+  }
 }
 
 @media (max-width: 560px) {

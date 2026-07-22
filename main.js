@@ -32,6 +32,9 @@ const elCntDropSystem      = document.getElementById('cntDropSystem');
 const elCntDropClient      = document.getElementById('cntDropClient');
 const elCntPU               = document.getElementById('cntPU');
 const elCntPM               = document.getElementById('cntPM');
+const elCntTalkTime         = document.getElementById('cntTalkTime');
+const elCntManualTalkTime   = document.getElementById('cntManualTalkTime');
+const elCntManualCallAgents = document.getElementById('cntManualCallAgents');
 
 /* ===== DRAG & DROP ===== */
 dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
@@ -132,7 +135,12 @@ async function processAllWorkbooks(fileData, files) {
   let totalDropClient = 0;
   let totalPU = 0;
   let totalPM = 0;
+  let totalTalkTimeSeconds = 0;
+  let totalManualTalkTimeSeconds = 0;
   let totalRows       = 0;
+  
+  // Global tracking for unique manual call agents
+  const globalManualCallAgents = new Set();
 
   const totalFiles = fileData.length;
 
@@ -166,6 +174,7 @@ async function processAllWorkbooks(fileData, files) {
     const remarkKey     = keys.find(k => k.trim().toLowerCase() === 'remark');
     const remarkTypeKey = keys.find(k => k.trim().toLowerCase() === 'remark type');
     const callDurationKey = keys.find(k => k.trim().toLowerCase() === 'call duration');
+    const talkTimeKey     = keys.find(k => k.trim().toLowerCase() === 'talk time duration');
     const accountNoKey    = keys.find(k =>
       k.trim().toLowerCase() === 'account no.' || k.trim().toLowerCase() === 'account no'
     );
@@ -189,6 +198,9 @@ async function processAllWorkbooks(fileData, files) {
     let filePU = 0;
     let filePM = 0;
     let fileAccountsDialed = 0;
+    let fileTalkTimeSeconds = 0;
+    let fileManualTalkTimeSeconds = 0;
+    const fileManualCallAgents = new Set();
 
     // Per-file seen accounts (for per-file unique connected)
     const fileSeenAccounts = new Map();
@@ -254,12 +266,56 @@ async function processAllWorkbooks(fileData, files) {
         }
       }
 
+      /* ── Manual Call Agents: count unique agents for rows where Remark Type = "Outgoing" ── */
+      if (m_type && remarkByKey) {
+        const agentRaw = String(row[remarkByKey] ?? '').trim();
+        if (agentRaw) {
+          fileManualCallAgents.add(agentRaw);
+          globalManualCallAgents.add(agentRaw);
+        }
+      }
+
       /* ── PU / PM: raw counts based on Status column, no dedup ── */
       if (statusKey) {
         const statusLow = String(row[statusKey] ?? '').trim().toLowerCase();
 
         if (statusLow === 'pu') filePU++;
         if (statusLow === 'pm') filePM++;
+      }
+
+      /* ── Total Talk Time: sum every row's "Talk Time Duration" (HH:MM:SS)
+         into a running seconds total. Malformed/blank values contribute 0
+         rather than throwing, so one bad row doesn't break the whole sum. ── */
+      if (talkTimeKey) {
+        const talkRaw = String(row[talkTimeKey] ?? '').trim();
+        if (talkRaw) {
+          const parts = talkRaw.split(':');
+          if (parts.length === 3) {
+            const h = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            const s = parseInt(parts[2], 10);
+            if (!isNaN(h) && !isNaN(m) && !isNaN(s)) {
+              fileTalkTimeSeconds += (h * 3600) + (m * 60) + s;
+            }
+          }
+        }
+      }
+
+      /* ── Manual Talk Time: sum "Talk Time Duration" only for rows where
+         Remark Type = "Outgoing" (i.e., m_type is true). ── */
+      if (m_type && talkTimeKey) {
+        const talkRaw = String(row[talkTimeKey] ?? '').trim();
+        if (talkRaw) {
+          const parts = talkRaw.split(':');
+          if (parts.length === 3) {
+            const h = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            const s = parseInt(parts[2], 10);
+            if (!isNaN(h) && !isNaN(m) && !isNaN(s)) {
+              fileManualTalkTimeSeconds += (h * 3600) + (m * 60) + s;
+            }
+          }
+        }
       }
 
       /* ── Connected: valid Call Duration (not blank/missing — "00:00:00" now counts), unique Account No. ── */
@@ -361,6 +417,8 @@ async function processAllWorkbooks(fileData, files) {
     totalDropClient += fileDropClient;
     totalPU         += filePU;
     totalPM         += filePM;
+    totalTalkTimeSeconds += fileTalkTimeSeconds;
+    totalManualTalkTimeSeconds += fileManualTalkTimeSeconds;
 
     fileStats.push({
       name:               file.name,
@@ -377,6 +435,9 @@ async function processAllWorkbooks(fileData, files) {
       pu:                  filePU,
       pm:                  filePM,
       accountsDialed:      fileAccountsDialed,
+      talkTimeSeconds:     fileTalkTimeSeconds,
+      manualTalkTimeSeconds: fileManualTalkTimeSeconds,
+      manualCallAgents:    fileManualCallAgents.size,
     });
 
     markFileDone(file.name, rows.length, i, totalFiles);
@@ -422,6 +483,9 @@ async function processAllWorkbooks(fileData, files) {
   animateCount(elCntDropClient,      totalDropClient);
   animateCount(elCntPU,              totalPU);
   animateCount(elCntPM,              totalPM);
+  animateDuration(elCntTalkTime,     totalTalkTimeSeconds);
+  animateDuration(elCntManualTalkTime, totalManualTalkTimeSeconds);
+  animateCount(elCntManualCallAgents, globalManualCallAgents.size);
 
   /* File meta — summary line always visible; detailed list auto-hidden
      to reduce clutter, with a toggle to reveal it on demand. */
@@ -473,6 +537,9 @@ function buildSummaryTable(fileStats) {
       <td class="col-drop-client num-cell">${stat.dropClient.toLocaleString()}</td>
       <td class="col-pm num-cell">${stat.pm.toLocaleString()}</td>
       <td class="col-pu num-cell">${stat.pu.toLocaleString()}</td>
+      <td class="col-talktime num-cell">${formatDuration(stat.talkTimeSeconds)}</td>
+      <td class="col-manual-talktime num-cell">${formatDuration(stat.manualTalkTimeSeconds)}</td>
+      <td class="col-manual-agents num-cell">${stat.manualCallAgents.toLocaleString()}</td>
     `;
     frag.appendChild(tr);
   });
@@ -492,6 +559,33 @@ function animateCount(el, target) {
     current += inc;
     if (current >= target) { current = target; clearInterval(timer); }
     el.textContent = Math.round(current).toLocaleString();
+  }, interval);
+}
+
+/* Formats a total-seconds duration as HH:MM:SS. Hours are zero-padded to a
+   minimum of 2 digits but are NOT capped/wrapped at 24 — accumulated totals
+   that exceed a day (e.g. 125:30:10) display correctly rather than rolling
+   over, since this represents summed duration, not a wall-clock time. */
+function formatDuration(totalSeconds) {
+  const safeSeconds = Math.max(0, Math.round(totalSeconds || 0));
+  const h = Math.floor(safeSeconds / 3600);
+  const m = Math.floor((safeSeconds % 3600) / 60);
+  const s = safeSeconds % 60;
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
+function animateDuration(el, targetSeconds) {
+  if (!el) return;
+  if (!targetSeconds) { el.textContent = formatDuration(0); return; }
+  const steps = Math.min(40, Math.max(1, Math.round(targetSeconds)));
+  const interval = 600 / steps;
+  const inc = targetSeconds / steps;
+  let current = 0;
+  const timer = setInterval(() => {
+    current += inc;
+    if (current >= targetSeconds) { current = targetSeconds; clearInterval(timer); }
+    el.textContent = formatDuration(current);
   }, interval);
 }
 
@@ -550,7 +644,7 @@ function resetAll() {
   fileInfoToggle.classList.add('hidden');
   fileInfoBar.classList.add('hidden');
 
-  [elCntPCombined, elCntBRemarkContains, elCntMTypeEquals, elCntAccountsDialed, elCntCUnique, elCntConnectedWithClient, elCntConnectedPredictive, elCntConnectedManual, elCntUniqueWorked, elCntDropSystem, elCntDropClient, elCntPU, elCntPM]
+  [elCntPCombined, elCntBRemarkContains, elCntMTypeEquals, elCntAccountsDialed, elCntCUnique, elCntConnectedWithClient, elCntConnectedPredictive, elCntConnectedManual, elCntUniqueWorked, elCntDropSystem, elCntDropClient, elCntPU, elCntPM, elCntTalkTime, elCntManualTalkTime, elCntManualCallAgents]
     .forEach(el => { if (el) el.textContent = '—'; });
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
